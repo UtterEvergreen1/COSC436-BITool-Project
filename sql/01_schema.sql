@@ -40,6 +40,34 @@ CREATE TABLE DimTrader (
   TraderType  VARCHAR(16)  NOT NULL CHECK (TraderType IN ('System','Human'))
 );
 
+CREATE TABLE FactMarketData (
+  MarketDataKey BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  InstrumentKey INT    NOT NULL REFERENCES DimInstrument (InstrumentKey),
+  DateKey       INT    NOT NULL REFERENCES DimDate (DateKey),
+  Open          NUMERIC(18,6),
+  High          NUMERIC(18,6),
+  Low           NUMERIC(18,6),
+  Close         NUMERIC(18,6) NOT NULL,
+  Volume        BIGINT,
+  UNIQUE (InstrumentKey, DateKey)
+);
+ 
 
-
-s
+CREATE TABLE FactTrades (
+  TradeKey      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  InstrumentKey INT NOT NULL REFERENCES DimInstrument (InstrumentKey),
+  StrategyKey   INT NOT NULL REFERENCES DimStrategy (StrategyKey),
+  TraderKey     INT NOT NULL REFERENCES DimTrader (TraderKey),
+  EntryDateKey  INT NOT NULL REFERENCES DimDate (DateKey),
+  ExitDateKey   INT NOT NULL REFERENCES DimDate (DateKey),
+  Side          VARCHAR(4)    NOT NULL CHECK (Side IN ('BUY','SELL')),
+  Quantity      NUMERIC(18,4) NOT NULL CHECK (Quantity > 0),
+  EntryPrice    NUMERIC(18,6) NOT NULL CHECK (EntryPrice > 0),
+  ExitPrice     NUMERIC(18,6) NOT NULL CHECK (ExitPrice > 0),
+  -- Computed by the database so it can never disagree with the prices.
+  ProfitLoss    NUMERIC(22,6) GENERATED ALWAYS AS (
+                  Quantity * (ExitPrice - EntryPrice)
+                  * CASE WHEN Side = 'BUY' THEN 1 ELSE -1 END
+                ) STORED,
+  CHECK (ExitDateKey >= EntryDateKey)
+);

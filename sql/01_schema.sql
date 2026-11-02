@@ -51,7 +51,6 @@ CREATE TABLE FactMarketData (
   Volume        BIGINT,
   UNIQUE (InstrumentKey, DateKey)
 );
- 
 
 CREATE TABLE FactTrades (
   TradeKey      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -70,4 +69,28 @@ CREATE TABLE FactTrades (
                   * CASE WHEN Side = 'BUY' THEN 1 ELSE -1 END
                 ) STORED,
   CHECK (ExitDateKey >= EntryDateKey)
+);
+
+CREATE TABLE FactPositions (
+  PositionKey   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  InstrumentKey INT NOT NULL REFERENCES DimInstrument (InstrumentKey),
+  DateKey       INT NOT NULL REFERENCES DimDate (DateKey),
+  StrategyKey   INT NOT NULL REFERENCES DimStrategy (StrategyKey),
+  TraderKey     INT NOT NULL REFERENCES DimTrader (TraderKey),
+  Quantity      NUMERIC(18,4) NOT NULL,
+  MarketValue   NUMERIC(22,6) NOT NULL,
+  UNIQUE (StrategyKey, TraderKey, InstrumentKey, DateKey)
+);
+
+CREATE TABLE FactBacktestResults (
+  BacktestKey   INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  StrategyKey   INT NOT NULL REFERENCES DimStrategy (StrategyKey),
+  StartDateKey  INT NOT NULL REFERENCES DimDate (DateKey),
+  EndDateKey    INT NOT NULL REFERENCES DimDate (DateKey),
+  NumTrades     INT           NOT NULL,
+  WinRate       NUMERIC(7,4),            -- fraction 0-1
+  TotalPnL      NUMERIC(22,6),
+  TotalReturn   NUMERIC(12,6),           -- fraction, For example: 0.12 = +12%
+  MaxDrawdown   NUMERIC(12,6),           -- fraction, reported as a negative number
+  Sharpe        NUMERIC(12,6)
 );

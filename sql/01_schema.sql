@@ -17,3 +17,13 @@ CREATE TABLE DimDate (
   TradingDayNum INT                                  
 );
 
+CREATE TABLE DimInstrument (
+  InstrumentKey INT         NOT NULL PRIMARY KEY,
+  Symbol        VARCHAR(32) NOT NULL UNIQUE,
+  AssetClass    VARCHAR(64) NOT NULL,                -- 'Equity' for every row (S&P 500 constituents)
+  FirstDate     DATE,                                
+  LastDate      DATE,                                
+  BarCount      INT                                  
+);
+
+

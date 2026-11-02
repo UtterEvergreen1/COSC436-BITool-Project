@@ -26,4 +26,19 @@ CREATE TABLE DimInstrument (
   BarCount      INT                                  
 );
 
+CREATE TABLE DimStrategy (
+  StrategyKey         INT          NOT NULL PRIMARY KEY,
+  StrategyName        VARCHAR(128) NOT NULL UNIQUE,
+  StrategyType        VARCHAR(64),
+  StrategyDescription VARCHAR(512),
+  Parameters          VARCHAR(256)                   -- for example "fast=20, slow=50"
+);
+ 
+CREATE TABLE DimTrader (
+  TraderKey   INT          NOT NULL PRIMARY KEY,
+  TraderName  VARCHAR(128) NOT NULL UNIQUE,
+  TraderType  VARCHAR(16)  NOT NULL CHECK (TraderType IN ('System','Human'))
+);
+
+
 

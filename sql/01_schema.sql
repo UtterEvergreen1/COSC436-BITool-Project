@@ -42,3 +42,4 @@ CREATE TABLE DimTrader (
 
 
 
+s

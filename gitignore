@@ -1,0 +1,24 @@
+# Secrets and local config
+.env
+
+# Raw dataset (29.6 MB, CC0): download from Kaggle, see README
+data/*
+!data/README.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editors (SQLTools can store connection passwords here)
+.vscode/
+.idea/
+
+# Metabase application database copies
+*.mv.db
+*.trace.db
+
+# OS
+.DS_Store
+Thumbs.db

@@ -40,11 +40,18 @@ CREATE TABLE DimTrader (
   TraderType  VARCHAR(16)  NOT NULL CHECK (TraderType IN ('System','Human'))
 );
 
+CREATE TABLE FactMarketData (
+  MarketDataKey BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  InstrumentKey INT    NOT NULL REFERENCES DimInstrument (InstrumentKey),
+  DateKey       INT    NOT NULL REFERENCES DimDate (DateKey),
+  Open          NUMERIC(18,6),
+  High          NUMERIC(18,6),
+  Low           NUMERIC(18,6),
+  Close         NUMERIC(18,6) NOT NULL,
+  Volume        BIGINT,
+  UNIQUE (InstrumentKey, DateKey)
+);
 
-<<<<<<< Updated upstream
-
-s
-=======
 CREATE TABLE FactTrades (
   TradeKey      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   InstrumentKey INT NOT NULL REFERENCES DimInstrument (InstrumentKey),
@@ -87,4 +94,3 @@ CREATE TABLE FactBacktestResults (
   MaxDrawdown   NUMERIC(12,6),           -- fraction, reported as a negative number
   Sharpe        NUMERIC(12,6)
 );
->>>>>>> Stashed changes

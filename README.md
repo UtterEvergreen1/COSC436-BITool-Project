@@ -50,9 +50,12 @@ COSC 436 (Data Warehousing), Okanagan College.
 
 6. **Generate the backtest data** (the simulated trades, strategies and results)
    ```
-   python etl/make_sample_backtest.py
+   python etl/make_sample_backtest.py             # 8 trades per strategy, 24 total
+   python etl/make_sample_backtest.py --max-trades 20  # smaller sample
    ```
    Writes `data/backtest/strategies.csv`, `trades.csv` and `results.csv`.
+   The CSVs are not committed: they are generated from `data/all_stocks_5yr.csv` (see
+   `data/backtest/README.md` for the rules and formulas).
 
 7. **Build the warehouse** (creates schema `dw`; safe to re-run, it drops and recreates `dw`)
    ```

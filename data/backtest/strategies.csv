@@ -1,0 +1,4 @@
+strategy_name,strategy_type,description,parameters,trader_name,trader_type
+SMA Crossover 20/50,Trend following,Long when the 20-day SMA crosses above the 50-day SMA; exit when it crosses back below.,"fast=20, slow=50, qty=100",TrendBot,System
+RSI 14 Mean Reversion,Mean reversion,Long when RSI(14) falls below 30 and crosses back above; exit at RSI 70.,"rsi=14, oversold=30, overbought=70, qty=100",ReversionBot,System
+20-Day Breakout,Breakout,Long when the close breaks above the highest close of the previous 20 days; exit 10 days later.,"channel=20, hold=10, qty=100",BreakoutBot,System

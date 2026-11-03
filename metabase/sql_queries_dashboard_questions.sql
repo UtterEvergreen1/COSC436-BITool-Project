@@ -1,35 +1,35 @@
 -- P&L By Strategy over time
 
-SELECT date_trunc('month', t.date) AS month, s.strategyname, SUM(f.profitloss) AS pnl
-FROM dw.facttrades f
-JOIN dw.dimtime t USING (timekey)
-JOIN dw.dimstrategy s USING (strategykey)
+SELECT date_trunc('month', d.FullDate) AS month, s.StrategyName, SUM(f.ProfitLoss) AS pnl
+FROM dw.FactTrades f
+JOIN dw.DimDate d ON d.DateKey = f.EntryDateKey
+JOIN dw.DimStrategy s ON s.StrategyKey = f.StrategyKey
 GROUP BY 1, 2 ORDER BY 1;
 
 -- Win rate by strategy
 
-SELECT s.strategyname, ROUND(100.0 * AVG((f.profitloss > 0)::int), 1) AS win_rate_pct, COUNT(*) AS trades
-FROM dw.facttrades f JOIN dw.dimstrategy s USING (strategykey)
+SELECT s.StrategyName, ROUND(100.0 * AVG((f.ProfitLoss > 0)::int), 1) AS win_rate_pct, COUNT(*) AS trades
+FROM dw.FactTrades f JOIN dw.DimStrategy s USING (StrategyKey)
 GROUP BY 1;
 
 -- Exposure by strategy
 
-SELECT date_trunc('month', t.date) AS month, s.strategyname, SUM(p.marketvalue) AS net_exposure
-FROM dw.factpositions p
-JOIN dw.dimtime t USING (timekey)
-JOIN dw.dimstrategy s USING (strategykey)
+SELECT date_trunc('month', d.FullDate) AS month, s.StrategyName, SUM(p.MarketValue) AS net_exposure
+FROM dw.FactPositions p
+JOIN dw.DimDate d ON d.DateKey = p.DateKey
+JOIN dw.DimStrategy s ON s.StrategyKey = p.StrategyKey
 GROUP BY 1, 2 ORDER BY 1;
 
 -- Trades by instrument
 
-SELECT i.symbol, COUNT(*) AS trades
-FROM dw.facttrades f JOIN dw.diminstrument i USING (instrumentkey)
+SELECT i.Symbol, COUNT(*) AS trades
+FROM dw.FactTrades f JOIN dw.DimInstrument i USING (InstrumentKey)
 GROUP BY 1 ORDER BY 2 DESC LIMIT 20;
 
 -- Price history for one ticker
 
-SELECT t.date, m.close
-FROM dw.factmarketdata m
-JOIN dw.dimtime t USING (timekey)
-JOIN dw.diminstrument i USING (instrumentkey)
-WHERE i.symbol = 'AAPL' ORDER BY 1;
+SELECT d.FullDate, m.Close
+FROM dw.FactMarketData m
+JOIN dw.DimDate d ON d.DateKey = m.DateKey
+JOIN dw.DimInstrument i USING (InstrumentKey)
+WHERE i.Symbol = 'AAPL' ORDER BY 1;

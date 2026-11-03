@@ -9,11 +9,17 @@ Source of truth: `sql/01_schema.sql` (DDL), `sql/03_load_dw.sql` (loading).
 ```
 docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/01_schema.sql
 python etl/load_staging.py data/all_stocks_5yr.csv             # staging.stg_market_ohlcv
+python etl/make_sample_backtest.py                             # data/backtest/*.csv (test data)
 docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/02_staging_backtest.sql
 # load the three backtest CSVs into staging.stg_bt_* (COPY ... CSV HEADER)
 docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/03_load_dw.sql
 ```
-`01` drops and recreates schema `dw`, so always run `01` before `03`.
+`01` drops and recreates schema `dw`, so always run `01` before `03`. `02` recreates the empty
+staging tables, so run it just before the COPY of the CSVs. Run all of the `docker compose exec`
+commands from the repo root: the SQL folder is mounted at `/sql` inside the container.
+
+Or run the whole pipeline at once: `python etl/run_etl.py` (it needs `data/backtest/*.csv`, which
+`make_sample_backtest.py` writes).
 
 ## Tables and grain
 

@@ -6,12 +6,16 @@ etl.etl_run_log:
   2. load_staging       etl/load_staging.py          (CSV -> staging.stg_market_ohlcv)
   3. staging_backtest   sql/02_staging_backtest.sql  (recreates staging.stg_bt_*)
   4. copy_backtest      strategies.csv, trades.csv, results.csv -> staging.stg_bt_*
-  5. load_dw            sql/03_load_dw.sql           (staging -> dw)
+  5. load_dw            sql/03_load_dw.sql           (staging -> dw; also builds
+     DimInstrument, DimDate and FactMarketData from the real staging data)
   6. validate           etl/validate.py              (stored in etl.validation_result)
 
 Usage (from the repo root, with Docker running):
     python etl/run_etl.py
     python etl/run_etl.py --csv data/all_stocks_5yr.csv --backtest-dir data/backtest
+
+The backtest CSVs are not in the repo: generate them first with
+`python etl/make_sample_backtest.py`, which writes data/backtest/{strategies,trades,results}.csv.
 
 The pipeline stops at the first failed step; that step is logged as FAILED with
 the error. Exit code: 0 if every step and check passed, 1 otherwise.

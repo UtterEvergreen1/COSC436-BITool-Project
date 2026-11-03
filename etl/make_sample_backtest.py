@@ -64,9 +64,11 @@ def rsi_mean_reversion(bars):
     loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
-    rsi = rsi.dropna()
+    # keep the NaN warm-up rows so positions in rsi line up with positions in bars
     trades, entry = [], None
     for i in range(len(rsi)):
+        if rsi.isna().iloc[i]:
+            continue
         if entry is None and rsi.iloc[i] < 30 and (i == 0 or rsi.iloc[i] > rsi.iloc[i - 1]):
             entry = i
         elif entry is not None and rsi.iloc[i] > 70:
@@ -113,6 +115,8 @@ def main():
     p.add_argument("--out", type=Path, default=ROOT / "data" / "backtest")
     p.add_argument("--max-trades", type=int, default=8,
                    help="trades per strategy; 8 x 3 strategies = 24")
+    p.add_argument("--all-tickers", action="store_true",
+                   help="trade every ticker with enough history, not just SYMBOLS")
     args = p.parse_args()
 
     df = pd.read_csv(args.csv, usecols=["date", "close", "Name"])
@@ -120,15 +124,22 @@ def main():
     trading_days = sorted(df.date.unique())
 
     rows, skipped = [], []
-    for sym in SYMBOLS:
-        bars = df[df.Name == sym].reset_index(drop=True)
+    symbols = sorted(df.Name.unique()) if args.all_tickers else SYMBOLS
+    by_symbol = {k: g.reset_index(drop=True) for k, g in df.groupby("Name")}
+    counts = {}
+    for sym in symbols:
+        bars = by_symbol.get(sym)
+        if bars is None:
+            skipped.append(f"{sym} (missing)")
+            continue
         if len(bars) < LOOKBACK:
             skipped.append(f"{sym} ({len(bars)} bars)")
             continue
         for s in STRATEGIES:
             for side, i, j in RULES[s["strategy_name"]](bars):
-                if len([r for r in rows if r["strategy_name"] == s["strategy_name"]]) >= args.max_trades:
+                if counts.get(s["strategy_name"], 0) >= args.max_trades:
                     break
+                counts[s["strategy_name"]] = counts.get(s["strategy_name"], 0) + 1
                 rows.append({"strategy_name": s["strategy_name"], "symbol": sym, "side": side,
                              "entry_date": bars.date[i], "exit_date": bars.date[j], "quantity": QUANTITY,
                              "entry_price": bars.close[i], "exit_price": bars.close[j]})

@@ -1,3 +1,9 @@
+-- Build (or rebuild) the `dw` schema. It drops and recreates the schema, so it
+-- is safe to run again after every change. Run BEFORE 03_load_dw.sql.
+--
+-- Run order: 01_schema.sql -> load_staging.py -> 02_staging_backtest.sql ->
+-- copy the three backtest CSVs -> 03_load_dw.sql -> validate.py
+
 DROP SCHEMA IF EXISTS dw CASCADE;
 CREATE SCHEMA dw;
 SET search_path TO dw, public;

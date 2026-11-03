@@ -1,3 +1,8 @@
+-- Recreate the backtest staging tables, empty.
+-- Run BEFORE the three backtest CSVs are copied into staging.stg_bt_*
+-- (see etl/run_etl.py or docs/schema_contract.md). Safe to re-run: the tables
+-- are dropped and rebuilt, so stale rows can never be left over.
+
 CREATE SCHEMA IF NOT EXISTS staging;
 
 DROP TABLE IF EXISTS staging.stg_bt_strategies, staging.stg_bt_trades, staging.stg_bt_results;

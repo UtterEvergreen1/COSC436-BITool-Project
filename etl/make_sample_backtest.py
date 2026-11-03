@@ -24,8 +24,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-SYMBOLS = ["AAPL", "MSFT", "AMZN", "JPM", "XOM", "JNJ", "WMT", "PG", "KO", "INTC",
-           "CSCO", "PFE", "BA", "DIS", "GE", "HD", "MCD", "NKE", "V", "UNH"]
+SYMBOLS = ["AAPL"]
 LOOKBACK = 50
 QUANTITY = 100
 CAPITAL = 100_000
@@ -34,9 +33,12 @@ STRATEGIES = [
     {"strategy_name": "SMA Crossover 20/50", "strategy_type": "Trend following",
      "description": "Long when the 20-day SMA crosses above the 50-day SMA; exit when it crosses back below.",
      "parameters": "fast=20, slow=50, qty=100", "trader_name": "TrendBot", "trader_type": "System"},
-    {"strategy_name": "Breakdown Short 20/10", "strategy_type": "Breakout",
-     "description": "Short when the close falls below the lowest close of the previous 20 days; cover after 10 days.",
-     "parameters": "channel=20, hold=10, qty=100", "trader_name": "BreakdownBot", "trader_type": "System"},
+    {"strategy_name": "RSI 14 Mean Reversion", "strategy_type": "Mean reversion",
+     "description": "Long when RSI(14) falls below 30 and crosses back above; exit at RSI 70.",
+     "parameters": "rsi=14, oversold=30, overbought=70, qty=100", "trader_name": "ReversionBot", "trader_type": "System"},
+    {"strategy_name": "20-Day Breakout", "strategy_type": "Breakout",
+     "description": "Long when the close breaks above the highest close of the previous 20 days; exit 10 days later.",
+     "parameters": "channel=20, hold=10, qty=100", "trader_name": "BreakoutBot", "trader_type": "System"},
 ]
 
 
@@ -55,20 +57,41 @@ def sma_crossover(bars):
     return trades
 
 
-def breakdown_short(bars):
-    prior_low = bars.close.shift(1).rolling(20).min()
+def rsi_mean_reversion(bars):
+    """Long on RSI(14) < 30 crossing back above 30; exit at RSI > 70. One trade at a time."""
+    delta = bars.close.diff()
+    gain = delta.where(delta > 0, 0.0).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0.0)).rolling(14).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    rsi = rsi.dropna()
+    trades, entry = [], None
+    for i in range(len(rsi)):
+        if entry is None and rsi.iloc[i] < 30 and (i == 0 or rsi.iloc[i] > rsi.iloc[i - 1]):
+            entry = i
+        elif entry is not None and rsi.iloc[i] > 70:
+            trades.append(("BUY", entry, i)); entry = None
+    if entry is not None:
+        trades.append(("BUY", entry, len(bars) - 1))          # force-close on the last bar
+    return trades
+
+
+def twenty_day_breakout(bars):
+    """Long on a close above the highest close of the previous 20 days; exit 10 days later."""
+    high20 = bars.close.shift(1).rolling(20).max()
     trades, i = [], 20
     while i < len(bars) - 1:
-        if bars.close.iloc[i] < prior_low.iloc[i]:
+        if bars.close.iloc[i] > high20.iloc[i]:
             exit_i = min(i + 10, len(bars) - 1)
-            trades.append(("SELL", i, exit_i))
+            trades.append(("BUY", i, exit_i))
             i = exit_i + 1                                       # one open trade at a time
         else:
             i += 1
     return trades
 
 
-RULES = {"SMA Crossover 20/50": sma_crossover, "Breakdown Short 20/10": breakdown_short}
+RULES = {"SMA Crossover 20/50": sma_crossover, "RSI 14 Mean Reversion": rsi_mean_reversion,
+         "20-Day Breakout": twenty_day_breakout}
 
 
 def results_for(name, t, trading_days):
@@ -88,6 +111,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--csv", type=Path, default=ROOT / "data" / "all_stocks_5yr.csv")
     p.add_argument("--out", type=Path, default=ROOT / "data" / "backtest")
+    p.add_argument("--max-trades", type=int, default=8,
+                   help="trades per strategy; 8 x 3 strategies = 24")
     args = p.parse_args()
 
     df = pd.read_csv(args.csv, usecols=["date", "close", "Name"])
@@ -102,6 +127,8 @@ def main():
             continue
         for s in STRATEGIES:
             for side, i, j in RULES[s["strategy_name"]](bars):
+                if len([r for r in rows if r["strategy_name"] == s["strategy_name"]]) >= args.max_trades:
+                    break
                 rows.append({"strategy_name": s["strategy_name"], "symbol": sym, "side": side,
                              "entry_date": bars.date[i], "exit_date": bars.date[j], "quantity": QUANTITY,
                              "entry_price": bars.close[i], "exit_price": bars.close[j]})

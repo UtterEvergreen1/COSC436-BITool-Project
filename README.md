@@ -28,50 +28,21 @@ COSC 436 (Data Warehousing), Okanagan College.
 2. **Get the data.** Download `all_stocks_5yr.csv` from
    <https://www.kaggle.com/datasets/camnugent/sandp500> and put it in `data/`.
 
-3. **Start the containers**
+3. **Set everything up with one command**
+   ```
+   ./setup.sh
+   ```
+   It starts the containers, creates the schema, loads the market data, generates the
+   backtest sample, loads the backtest into the warehouse and validates the result.
+
+4. **Start the containers manually** (only needed if `./setup.sh` fails or you want more control)
    ```
    docker compose up -d
    docker compose ps
    ```
    Wait until `dw-postgres` shows `healthy`.
 
-4. **Install Python dependencies**
-   ```
-   python -m venv .venv
-   .venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-5. **Load the staging table**
-   ```
-   python etl/load_staging.py data/all_stocks_5yr.csv
-   ```
-   Expected output: `Read 619,040 rows, loaded 619,040, skipped 0.`
-
-6. **Generate the backtest data** (the simulated trades, strategies and results)
-   ```
-   python etl/make_sample_backtest.py             # 8 trades per strategy, 24 total
-   python etl/make_sample_backtest.py --max-trades 20  # smaller sample
-   ```
-   Writes `data/backtest/strategies.csv`, `trades.csv` and `results.csv`.
-   The CSVs are not committed: they are generated from `data/all_stocks_5yr.csv` (see
-   `data/backtest/README.md` for the rules and formulas).
-
-7. **Build the warehouse** (creates schema `dw`; safe to re-run, it drops and recreates `dw`)
-   ```
-   docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/01_schema.sql
-   ```
-   The last lines print table row counts and a staging-vs-fact row check.
-
-8. **Load the backtest into the warehouse**
-   ```
-   docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/02_staging_backtest.sql
-   docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/03_load_dw.sql
-   ```
-   `02` recreates the empty staging tables; `03` copies them into `dw` and prints the row counts.
-   Run both from the repo root: the container sees the SQL folder at `/sql`.
-
-9. **Open Metabase** at <http://localhost:3000> and finish the setup wizard.
+5. **Open Metabase** at <http://localhost:3000> and finish the setup wizard.
    Add a PostgreSQL database with:
 
    | Field | Value |
@@ -83,9 +54,48 @@ COSC 436 (Data Warehousing), Okanagan College.
 
    Host and port differ from the ones on your PC because Metabase reaches Postgres from inside Docker.
 
-10. **Build the dashboard.** Create one SQL question per query in
+6. **Build the dashboard.** Create one SQL question per query in
    `metabase/sql_queries_dashboard_questions.sql`, then add them to a dashboard.
-   After re-running step 7, use Admin > Databases > Sync database schema now.
+   After re-running the setup, use Admin > Databases > Sync database schema now.
+
+## Manual steps
+
+Everything above is also done by `./setup.sh`. These commands are only useful if you want
+more control or are adding a new step to the pipeline.
+
+**Python environment** (created by `./setup.sh` too):
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Market data** (real Kaggle S&P 500 daily OHLCV):
+```bash
+python etl/load_staging.py data/all_stocks_5yr.csv
+```
+
+**Backtest sample** (simulated trades, strategies and results):
+```bash
+python etl/make_sample_backtest.py             # 8 trades per strategy, 24 total
+python etl/make_sample_backtest.py --max-trades 20  # smaller sample
+```
+
+**Warehouse schema** (creates schema `dw`; safe to re-run, it drops and recreates `dw`):
+```bash
+docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/01_schema.sql
+```
+
+**Backtest staging + load** (`02` recreates the empty staging tables; `03` copies them into `dw`):
+```bash
+docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/02_staging_backtest.sql
+docker compose exec warehouse psql -U dw_admin -d trading_dw -v ON_ERROR_STOP=1 -f /sql/03_load_dw.sql
+```
+
+**Validate**:
+```bash
+python etl/run_etl.py
+```
 
 ## Connecting from your own tools (DBeaver, VS Code SQLTools, psql)
 
@@ -108,6 +118,7 @@ This deletes the warehouse and Metabase volumes (including saved dashboards).
 ```
 docker-compose.yml   Postgres + Metabase
 .env.example         config template (copy to .env)
+setup.sh             one-command setup (containers, schema, load, validation)
 etl/                 load_staging.py, make_sample_backtest.py, run_etl.py, validate.py
 sql/                 warehouse DDL and load (staging -> dw)
 metabase/            dashboard queries and screenshots

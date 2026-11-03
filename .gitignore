@@ -4,6 +4,7 @@
 # Raw dataset (29.6 MB, CC0): download from Kaggle, see README
 data/*
 !data/README.md
+!data/backtest/README.md
 
 # Python
 __pycache__/

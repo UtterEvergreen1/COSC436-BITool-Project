@@ -130,9 +130,3 @@ data/                raw CSV goes here (not committed); data/backtest/ holds the
 
 Caleb Carlson, Daniel Cuevas, Karisni Pillay, Daniel Losso-Kiss, John Cortez, Munkh-Och Zorigoo.
 Market data: Cam Nugent, "S&P 500 stock data" (Kaggle, CC0 1.0).
-
-
-Put `all_stocks_5yr.csv` here (not committed).
-
-Download: https://www.kaggle.com/datasets/camnugent/sandp500 (CC0 1.0).
-Expected: 619,040 rows, 505 tickers, 2013-02-08 to 2018-02-07.

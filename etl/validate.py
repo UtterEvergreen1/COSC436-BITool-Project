@@ -22,12 +22,15 @@ KNOWN_NULL_LOWS = 8
 STG = "staging.stg_market_ohlcv"
 
 # Trading days each trade holds a non-flat position: entry day up to (not
-# including) the exit day, netting longs (+) and shorts (-).
+# including) the exit day, netting longs (+) and shorts (-). Only days on which the
+# instrument has a price bar count: a position cannot be valued without a price
+# (35 tickers have a few gaps), so 03_load_dw.sql leaves those days out.
 _HELD_DAYS = """
     SELECT t.StrategyKey, t.TraderKey, t.InstrumentKey, d.DateKey
     FROM dw.FactTrades t
     JOIN dw.DimDate d ON d.DateKey >= t.EntryDateKey AND d.DateKey < t.ExitDateKey
                      AND d.IsTradingDay
+    JOIN dw.FactMarketData m ON m.InstrumentKey = t.InstrumentKey AND m.DateKey = d.DateKey
     GROUP BY 1, 2, 3, 4
     HAVING SUM(CASE WHEN t.Side = 'BUY' THEN t.Quantity ELSE -t.Quantity END) <> 0
 """

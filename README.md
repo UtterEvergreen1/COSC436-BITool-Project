@@ -18,6 +18,8 @@ COSC 436 (Data Warehousing), Okanagan College.
 
 **Requirements:** Docker Desktop, Python 3.10+, git.
 
+On Windows run `setup_windows.bat` instead of `./setup.sh`; on macOS/Linux run `./setup.sh`.
+
 1. **Clone and configure**
    ```
    git clone https://github.com/UtterEvergreen1/COSC436-BITool-Project.git
@@ -119,6 +121,7 @@ This deletes the warehouse and Metabase volumes (including saved dashboards).
 docker-compose.yml   Postgres + Metabase
 .env.example         config template (copy to .env)
 setup.sh             one-command setup (containers, schema, load, validation)
+setup_windows.bat    same setup on Windows
 etl/                 load_staging.py, make_sample_backtest.py, run_etl.py, validate.py
 sql/                 warehouse DDL and load (staging -> dw)
 metabase/            dashboard queries and screenshots

@@ -39,9 +39,7 @@ SELECT s.StrategyName                AS "Strategy",
        r.NumTrades                   AS "Trades",
        ROUND(100 * r.WinRate, 1)     AS "Win rate (%)",
        ROUND(r.TotalPnL, 0)          AS "Total P&L ($)",
-       ROUND(100 * r.TotalReturn, 1) AS "Total return (%)",
-       ROUND(100 * r.MaxDrawdown, 1) AS "Max drawdown (%)",
-       ROUND(r.Sharpe, 2)            AS "Sharpe ratio"
+       ROUND(r.TotalPnL / r.NumTrades, 0) AS "Avg P&L per trade ($)"
 FROM dw.FactBacktestResults r
 JOIN dw.DimStrategy s ON s.StrategyKey = r.StrategyKey
 ORDER BY 1;
@@ -66,8 +64,9 @@ GROUP BY 1, 2
 ORDER BY 1, 2;
 
 -- Q5  Top 10 instruments by P&L  [Bar; X = Ticker, Y = Total P&L ($)]
-SELECT i.Symbol AS "Ticker",
-       ROUND(SUM(t.ProfitLoss), 2) AS "Total P&L ($)"
+   SELECT i.Symbol AS "Ticker",
+          ROUND(100 * SUM(t.ProfitLoss) / NULLIF(SUM(t.EntryPrice * t.Quantity), 0), 2)
+            AS "Return on capital deployed (%)"
 FROM dw.FactTrades t
 JOIN dw.DimInstrument i ON i.InstrumentKey = t.InstrumentKey
 JOIN dw.DimStrategy s   ON s.StrategyKey   = t.StrategyKey
@@ -76,9 +75,9 @@ WHERE 1 = 1
   [[AND s.StrategyName = {{strategy}}]]
   [[AND d.FullDate >= {{start_date}}]]
   [[AND d.FullDate <= {{end_date}}]]
-GROUP BY i.Symbol
-ORDER BY 2 DESC
-LIMIT 10;
+   GROUP BY i.Symbol
+   HAVING COUNT(*) >= 30
+   ORDER BY 2 DESC LIMIT 10;
 
 -- Q6  Price history for one ticker  [Line; X = Date, Y = Close price ($)]
 SELECT d.FullDate AS "Date",

@@ -1,0 +1,8 @@
+query,operation,description,before_ms,after_ms,before_plan,after_plan
+q1_rollup,Roll-up,P&L per strategy rolled up from month to quarter to year (+ strategy total),77.69,82.75,Seq Scan facttrades; Seq Scan dimdate; Seq Scan dimstrategy,Seq Scan facttrades; Seq Scan dimdate; Seq Scan dimstrategy
+q1_rollup_mv,Roll-up (materialized view),"Same result as q1_rollup, read from mv_monthly_pnl",,0.8,,Seq Scan mv_monthly_pnl
+q2_drilldown,Drill-down,From quarter down to individual days: daily P&L of the first strategy in 2016 Q2,9.12,1.86,Seq Scan dimstrategy; Seq Scan facttrades; Seq Scan dimdate,Seq Scan dimstrategy; Seq Scan dimdate; Index Scan ix_ft_exit_date
+q3_slice,Slice,One date only (2017-06-30): the 10 most traded instruments,2.59,1.2,Seq Scan diminstrument; Index Scan factmarketdata_instrumentkey_datekey_key,Bitmap Heap Scan factmarketdata; Bitmap Index Scan ix_fmd_date; Seq Scan diminstrument
+q4_dice,Dice,"Sub-cube on instrument AND time: symbols starting with A, 2016 Q1-Q2, average close and volume per quarter",88.84,89.53,Seq Scan factmarketdata; Seq Scan dimdate; Seq Scan diminstrument,Seq Scan factmarketdata; Seq Scan dimdate; Seq Scan diminstrument
+q5_pivot,Pivot,Quarters as columns: P&L per strategy and year,45.13,54.37,Seq Scan facttrades; Seq Scan dimdate; Seq Scan dimstrategy,Seq Scan facttrades; Seq Scan dimdate; Seq Scan dimstrategy
+q6_exposure,Slice (dashboard query),"Net exposure per strategy at each month-end (largest fact table, FactPositions)",112.76,115.34,Seq Scan factpositions; Seq Scan dimdate; Seq Scan dimstrategy,Seq Scan factpositions; Seq Scan dimdate; Seq Scan dimstrategy
